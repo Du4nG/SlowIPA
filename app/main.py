@@ -49,14 +49,19 @@ def root():
 
 @app.get('/posts')
 def get_post():
-    return {'Posts': my_posts}
+    cursor.execute("""SELECT * FROM posts""")
+    posts = cursor.fetchall()
+    print(posts)
+    return {'data': posts}
 
 @app.post('/posts', status_code=status.HTTP_201_CREATED)
 def create_post(post: Post):
-    post_dict = dict(post)
-    post_dict['id'] = randrange(0,99)
-    my_posts.append(post_dict)
-    return {"data": post_dict}
+    cursor.execute("""INSERT INTO posts (title, content, published)
+                   VALUES (%s, %s, %s) RETURNING *""", 
+                   (post.title, post.content, post.published))
+    new_post = cursor.fetchone()
+    conn.commit()
+    return {"new_post": new_post}
 
 
 @app.get('/posts/latest')
@@ -66,7 +71,8 @@ def get_latest_post():
 
 @app.get('/posts/{id}')
 def get_post(id: int):
-    post = find_post(id)
+    cursor.execute("""SELECT * FROM posts WHERE id = %s""", (str(id)))
+    post = cursor.fetchone()
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail='not found')
