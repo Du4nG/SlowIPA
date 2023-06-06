@@ -1,11 +1,13 @@
-from fastapi import FastAPI, Response, status, HTTPException
-from fastapi.params import Body
+from fastapi import FastAPI, status, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Optional
-from random import randrange
+from psycopg2.extras import RealDictCursor
+from . import models
+from .database import engine, get_db
+from sqlalchemy.orm import Session
 import psycopg2
 import time
-from psycopg2.extras import RealDictCursor
+
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -47,6 +49,10 @@ def find_post_index(id):
 def root():
     return {'home'}
 
+@app.get('/sqlalchemy')
+def test(db: Session = Depends(get_db)):
+    return {'status}': 'success'}
+
 @app.get('/posts')
 def get_post():
     cursor.execute("""SELECT * FROM posts""")
@@ -80,22 +86,25 @@ def get_post(id: int):
 
 @app.delete('/posts/{id}', status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int):
-    index = find_post_index(id)
-    if index == None:
+    cursor.execute("""DELETE FROM posts WHERE id = %s RETURNING *""",str(id))
+    deleted_post = cursor.fetchone()
+    conn.commit()
+    
+    if deleted_post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail='id doesn\'t exist')
-    my_posts.pop(index)
     return {status.HTTP_204_NO_CONTENT}
 
 @app.put('/posts/{id}')
 def update_post(id: int, post: Post):
-    index = find_post_index(id)
-    if index == None:
+    cursor.execute("""UPDATE posts SET (title, content, published)
+                   = (%s, %s, %s) WHERE id = %s RETURNING *""",
+                   (post.title, post.content, post.published, str(id)))
+    updated_post = cursor.fetchone()
+                    
+    if updated_post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail='id doesn\'t exist')
-    post_dict = dict(post)
-    post_dict['id'] = id
-    my_posts[index] = post_dict
     
-    return {'data': post_dict}
+    return {'updated_data': updated_post}
     
