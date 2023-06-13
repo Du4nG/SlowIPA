@@ -3,7 +3,7 @@ name: Build and deploy code
 on: [push, pull_request]
 
 jobs:
-  job1:
+  build:
     environment:
       name: testing
     env:
@@ -19,15 +19,15 @@ jobs:
       postgres:
         image: postgres
         env: 
-          POSTGRES_PASSWORD: ${{secrets.DATABASE_PASSWORD}}
           POSTGRES_DB: ${{secrets.DATABASE_NAME}}_test
+          POSTGRES_PASSWORD: ${{secrets.DATABASE_PASSWORD}}
         ports:
         - 5432:5432
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        # options: >-
+        #   --health-cmd "redis-cli ping"
+        #   --health-interval 10s
+        #   --health-timeout 5s
+        #   --health-retries 5
     runs-on: ubuntu-latest
     steps:
       - name: Pulling git repo 
@@ -44,3 +44,24 @@ jobs:
         run: |
           pip install pytest
           pytest
+      # - name: Login to DockerHub
+      #   uses: docker/login-action@v1
+      #   with:
+      #     username: ${{secrets.DOCKER_HUB_USERNAME}}
+      #     password:  ${{secrets.DOCKER_HUB_ACCESS_TOKEN}}
+      # - name: Build & push
+      #   id: docker_build
+      #   uses: docker/build-push-action@v2
+      #   with:
+      #     content: ./
+      #     file: ./Dockerfile
+      #     push: ACCESS_TOKEN_EXPIRE_MINUTES
+      #     tags: ${{secrets.DOCKER_HUB_USERNAME}}/fastapi:latest
+
+  deploy: 
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    steps:
+      - name: Deploying
+        run: echo 'deploying test'
