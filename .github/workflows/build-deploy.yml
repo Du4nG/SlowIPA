@@ -1,0 +1,12 @@
+name: Build and deploy code
+
+on: [push, pull_request]
+
+jobs:
+  job1:
+    runs-on: ubuntu-latest
+    steps:
+      - names: pulling git repo
+        uses: actions/checkout@v2
+      - name: hi bitch
+        run: echo 'ci/cd'
