@@ -6,7 +6,7 @@ jobs:
   job1:
     runs-on: ubuntu-latest
     steps:
-      - names: pulling git repo
+      - name: pulling git repo
         uses: actions/checkout@v2
       - name: hi bitch
         run: echo 'ci/cd'
